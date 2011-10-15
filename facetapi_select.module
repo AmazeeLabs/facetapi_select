@@ -1,0 +1,72 @@
+<?php
+
+function facetapi_select_facet_form($form_state, $options, $count = 0) {
+  drupal_add_js(drupal_get_path('module', 'facetapi_select') .'/js/facetapi_select.js');
+  
+  $name = 'facetapi_select_facet_form_' . $count;
+  $form['facets'] = array(
+    '#type' => 'select',
+    '#id' => $name,
+    '#default_value' => '',
+    '#options' => $options,
+    '#attributes' => array('onchange' => "top.location.href=document.getElementById('$name').options[document.getElementById('$name').selectedIndex].value"),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+  return $form;
+}
+
+/**
+ * Submit function for facetapi_select_form().
+ */
+function facetapi_select_facet_form_submit($form, &$form_state) {
+  preg_match('/^\/(.*)\?(.*)/', $form_state['values']['facets'], $filters);
+  drupal_goto($filters[1], $query = $filters[2]);
+}
+
+/**
+ * Implements hook_facetapi_widgets().
+ */
+function facetapi_select_facetapi_widgets() {
+  return array(
+    'facetapi_select_dropdowns' => array(
+      'handler' => array(
+        'label' => t('Select Field (Dropdowns'),
+        'class' => 'FacetapiSelectDropdowns',
+      ),
+    ),
+  );
+}
+
+/**
+ * Widget that renders facets as dropdowns.
+ */
+class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
+
+  /**
+   * Renders the links.
+   */
+  public function execute() {
+    static $count = 0;
+    $count++;
+    $element = &$this->build[$this->facet['field alias']];
+    
+    $options[] = t('--Choose--');
+    foreach ($element as $value => $item) {
+      $url = url($_GET['q'], array('query' => $item['#query']));
+      $options[$url] = $item['#markup'];
+    }
+
+    // We keep track of how many facets we're adding, because each facet form
+    // needs a different form id.
+    if (end($options) !== '(-)') {
+      if (!isset($form_state)) {
+        $form_state = array();
+      }
+      $element = facetapi_select_facet_form($form_state, $options, $count);
+    }
+  }
+}
+
