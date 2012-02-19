@@ -33,7 +33,7 @@ function facetapi_select_facetapi_widgets() {
   return array(
     'facetapi_select_dropdowns' => array(
       'handler' => array(
-        'label' => t('Select Field (Dropdowns'),
+        'label' => t('Select Field (Dropdowns)'),
         'class' => 'FacetapiSelectDropdowns',
       ),
     ),
