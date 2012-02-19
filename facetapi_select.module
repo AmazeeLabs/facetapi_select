@@ -35,6 +35,7 @@ function facetapi_select_facetapi_widgets() {
       'handler' => array(
         'label' => t('Select Field (Dropdowns)'),
         'class' => 'FacetapiSelectDropdowns',
+        'query types' => array('term', 'date'),
       ),
     ),
   );
