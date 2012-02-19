@@ -1,5 +1,5 @@
 (function ($) {
-  Drupal.behaviors.facetapiSelect = =  {
+  Drupal.behaviors.facetapiSelect = {
     attach: function(context) {
       $(".block-facetapi .form-submit").hide();
     }
