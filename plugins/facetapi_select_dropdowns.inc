@@ -64,7 +64,7 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
       $url = url($item['#path'], array('query' => $item['#query']));
       // If this filter value is not active
       if (!$item['#active']) {
-        $items[$url] = $item['#markup'];
+        $items[$url] = format_plural($item['#count'], $settings['option-text-single'], $settings['option-text-multiple'], array('!item' => $item['#markup']));
       }
       // Otherwise the link provided is the one to 'remove' the filter value
       else {
@@ -99,6 +99,18 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
       '#description' => t('Hide the forms submit button and submit automatically'),
       '#default_value' => $this->settings->settings['auto-submit'],
     );
+    $form['widget']['widget_settings']['links'][$this->id]['option-text-single'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Option text (singular)'),
+      '#description' => t('This text will be used to construct the option labels in the select box. You may use the following tokens: !label'),
+      '#default_value' => $this->settings->settings['option-text-single'],
+    );
+    $form['widget']['widget_settings']['links'][$this->id]['option-text-multiple'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Option text (multiple'),
+      '#description' => t('This text will be used to construct the option labels in the select box. You may use the following tokens: !label, @count'),
+      '#default_value' => $this->settings->settings['option-text-multiple'],
+    );
   }
 
   /**
@@ -108,6 +120,8 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     return array(
       'no-selection' => t('Any'),
       'auto-submit' => 1,
+      'option-text-single' => '!label (1 result)',
+      'option-text-multiple' => '!label (@count results)',
     );
   }
 }
