@@ -64,7 +64,7 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
       $url = url($item['#path'], array('query' => $item['#query']));
       // If this filter value is not active
       if (!$item['#active']) {
-        $items[$url] = format_plural($item['#count'], $settings['option-text-single'], $settings['option-text-multiple'], array('!item' => $item['#markup']));
+        $items[$url] = format_plural($item['#count'], $settings['option-text-single'], $settings['option-text-multiple'], array('!label' => $item['#markup']));
       }
       // Otherwise the link provided is the one to 'remove' the filter value
       else {
