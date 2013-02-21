@@ -24,6 +24,9 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     $element = &$this->build[$this->facet['field alias']];
     $vars = $this->buildSelectOptions($element);
     $vars['attributes'] = $this->build['#attributes'];
+    // Give peeps a chance to identify the facet.
+    $vars['widget'] = $this;
+    $vars['facet'] = $this->facet;
 
     // @TODO: This whole affair currently assumes that only a single value is
     // allowed for the filter, and thus we'll be using a standard drop-down.
