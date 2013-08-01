@@ -54,13 +54,18 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     static $count = 0;
     $count++;
     $element = &$this->build[$this->facet['field alias']];
-    
-    $options[] = t('--Choose--');
-    foreach ($element as $value => $item) {
-      $url = url($_GET['q'], array('query' => $item['#query']));
-      $options[$url] = $item['#markup'];
+
+    $settings = $this->settings;
+    if (!empty($settings->settings['default_option_label'])) {
+      $options[] = $settings->settings['default_option_label'];
+    } else {
+      $options[] = t('--Choose--');
     }
 
+    foreach ($element as $value => $item) {
+      $url = url($item['#path'], array('query' => $item['#query']));
+      $options[$url] = $item['#markup'].' ('.$item['#count'].')';
+    }
     // We keep track of how many facets we're adding, because each facet form
     // needs a different form id.
     if (end($options) !== '(-)') {
@@ -70,5 +75,13 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
       $element = facetapi_select_facet_form($form_state, $options, $count);
     }
   }
-}
 
+  public function settingsForm(&$form, &$form_state) {
+    parent::settingsForm($form, $form_state);
+    $form['widget']['widget_settings']['links'][$this->id]['default_option_label'] = array(
+      '#title' => t('Default Option Label'),
+      '#type' => 'textfield',
+      '#default_value' => $this->settings->settings['default_option_label'],
+    );
+  }
+}
