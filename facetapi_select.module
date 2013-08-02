@@ -63,7 +63,8 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     }
 
     foreach ($element as $value => $item) {
-      $url = url($item['#path'], array('query' => $item['#query']));
+      $path = !empty($this->settings->settings['submit_page']) ? $this->settings->settings['submit_page'] : $item['#path'];
+      $url = url($path, array('query' => $item['#query']));
       $options[$url] = $item['#markup'].' ('.$item['#count'].')';
     }
     // We keep track of how many facets we're adding, because each facet form
@@ -82,6 +83,12 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
       '#title' => t('Default Option Label'),
       '#type' => 'textfield',
       '#default_value' => $this->settings->settings['default_option_label'],
+    );
+    $form['widget']['widget_settings']['links'][$this->id]['submit_page'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Force this facet to submit to a specific search page'),
+      '#description' => t('This facet will always submit to the page it is on if left empty.'),
+      '#default_value' => !empty($this->settings->settings['submit_page']) ? $this->settings->settings['submit_page'] : '',
     );
   }
 }
