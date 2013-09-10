@@ -78,7 +78,7 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     }
 
     $items = array(
-      $remove_filter_link => $settings['no-selection'],
+      $remove_filter_link => t($settings['no-selection'], array(), array('context' => 'facetapi')),
     ) + $items;
 
     return array('options' => $items, 'settings' => $settings);
