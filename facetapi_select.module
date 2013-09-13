@@ -64,6 +64,7 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
 
     foreach ($element as $value => $item) {
       $path = !empty($this->settings->settings['submit_page']) ? $this->settings->settings['submit_page'] : $item['#path'];
+      $path = strpos($item['#path'], $path) === 0 ? $item['#path'] : $path;
       $url = url($path, array('query' => $item['#query']));
       $options[$url] = $item['#markup'].' ('.$item['#count'].')';
       if ($item['#active']) {
