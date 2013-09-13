@@ -66,7 +66,20 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
       $path = !empty($this->settings->settings['submit_page']) ? $this->settings->settings['submit_page'] : $item['#path'];
       $url = url($path, array('query' => $item['#query']));
       $options[$url] = $item['#markup'].' ('.$item['#count'].')';
+      if ($item['#active']) {
+        $facet_active = TRUE;
+      }
     }
+
+    if (!isset($facet_active)) {
+      if (!empty($settings->settings['default_option_label'])) {
+        array_unshift($options, $settings->settings['default_option_label']);
+      }
+      else {
+        array_unshift($options, t('--Choose--'));
+      }
+    }
+
     // We keep track of how many facets we're adding, because each facet form
     // needs a different form id.
     if (end($options) !== '(-)') {
