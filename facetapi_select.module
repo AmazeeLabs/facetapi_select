@@ -96,7 +96,7 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     $form['widget']['widget_settings']['links'][$this->id]['default_option_label'] = array(
       '#title' => t('Default Option Label'),
       '#type' => 'textfield',
-      '#default_value' => $this->settings->settings['default_option_label'],
+      '#default_value' => !empty($this->settings->settings['default_option_label']) ? $this->settings->settings['default_option_label'] : '',
     );
     $form['widget']['widget_settings']['links'][$this->id]['submit_page'] = array(
       '#type' => 'textfield',
