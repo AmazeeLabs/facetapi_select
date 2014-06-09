@@ -68,7 +68,7 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
       }
     }
 
-    if (!isset($facet_active)) {
+    if (!$facet_active) {
       if (!empty($settings->settings['default_option_label'])) {
         array_unshift($options, $settings->settings['default_option_label']);
       }
