@@ -1,16 +1,29 @@
 <?php
 
-function facetapi_select_facet_form($form_state, $options, $count = 0) {
-  drupal_add_js(drupal_get_path('module', 'facetapi_select') .'/js/facetapi_select.js');
-  
+/**
+ * @file
+ * Module file for Facet API Select.
+ */
+
+/**
+ * The actual facet form.
+ */
+function facetapi_select_facet_form($form_state, $options, $count = 0, $active_item = NULL) {
+  drupal_add_js(drupal_get_path('module', 'facetapi_select') . '/js/facetapi_select.js');
+
   $name = 'facetapi_select_facet_form_' . $count;
   $form['facets'] = array(
     '#type' => 'select',
     '#id' => $name,
-    '#default_value' => '',
     '#options' => $options,
     '#attributes' => array('onchange' => "top.location.href=document.getElementById('$name').options[document.getElementById('$name').selectedIndex].value"),
   );
+
+  // If a default is set, ensure it gets pre-selected.
+  if (!is_null($active_item)) {
+    $form['facets']['#value'] = $active_item;
+  }
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#attributes' => array('class' => array('facetapi-select-submit')),
@@ -43,7 +56,7 @@ function facetapi_select_facetapi_widgets() {
 }
 
 /**
- * Widget that renders facets as dropdowns.
+ * Widget that renders facets as drop-downs.
  */
 class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
 
@@ -54,51 +67,131 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     static $count = 0;
     $count++;
     $element = &$this->build[$this->facet['field alias']];
-
     $settings = $this->settings;
 
+    // The reset URL for the current facet.
+    $reset_url = NULL;
+
+    // The key of the active facet (if applicable).
+    $facet_item_key = NULL;
+
+    // Whether there is an active facet item.
     $facet_active = FALSE;
-    foreach ($element as $value => $item) {
-      $path = !empty($this->settings->settings['submit_page']) ? $this->settings->settings['submit_page'] : $item['#path'];
+
+    // The actual active URL computed from all the selected facet items.
+    $actual_active_url = NULL;
+
+    // Flag whether to set the current active facet.
+    $set_active_facet = !empty($settings->settings['active_facet_selected']) && $settings->settings['active_facet_selected'] == TRUE;
+
+    $select_options = array();
+    $path = !empty($this->settings->settings['submit_page']) ? $this->settings->settings['submit_page'] : NULL;
+
+    foreach ($element as $key => $item) {
+      if (is_null($path)) {
+        $path = $item['#path'];
+      }
       $path = strpos($item['#path'], $path) === 0 ? $item['#path'] : $path;
       $url = url($path, array('query' => $item['#query']));
-      $options[$url] = $item['#markup'].' ('.$item['#count'].')';
+      $select_options[$url] = $item['#markup'] . ' (' . $item['#count'] . ')';
       if ($item['#active']) {
         $facet_active = TRUE;
+
+        // Store the key of the active facet and the reset url that is
+        // attached to it..
+        if ($set_active_facet) {
+          $facet_item_key = $key;
+          $reset_url = $url;
+        }
       }
     }
 
+    $select_options_new = array();
+    $reset_label = !empty($settings->settings['reset_option_label']) ? $settings->settings['reset_option_label'] : t('--Reset--');
+    $choose_label = !empty($settings->settings['default_option_label']) ? $settings->settings['default_option_label'] : t('--Choose--');
+
+    // The reset URL that needs to be clicked to remove the currently active
+    // facet value.
+    $reset_key = $reset_url;
+
+    // If facet is not active, add choose label.
     if (!$facet_active) {
-      if (!empty($settings->settings['default_option_label'])) {
-        array_unshift($options, $settings->settings['default_option_label']);
-      }
-      else {
-        array_unshift($options, t('--Choose--'));
-      }
+      $select_options_new[''] = $choose_label;
     }
+    // Otherwise add reset label and set the active item as the default option,
+    // if the settings flag was set.
+    elseif ($set_active_facet) {
+      $select_options_new[$reset_key] = $reset_label;
+
+      // The actual active facet will have the reset url, we need to change
+      // it to be the current URL instead.
+      // This provides a better UX for the user.
+      // First we get the active item label, then we ask for the current URL
+      // and query params.
+      // Finally we append it to the new options array, which makes it appear
+      // directly after the reset label, and before the rest of the items.
+      $active_facet_label = $select_options[$reset_key];
+      $current_search_path = $this->facet->getAdapter()->getSearchPath();
+      $current_query_params = $this->facet->getAdapter()->getQueryString($this->facet->getFacet(), array($facet_item_key), FALSE);
+      $actual_active_url = url($current_search_path, array('query' => $current_query_params));
+      $select_options_new[$actual_active_url] = $active_facet_label;
+
+      // Remove the old active facet item from the select options, which is
+      // keyed by the reset URL.
+      unset($select_options[$reset_key]);
+    }
+
+    // Merge the rest of the options.
+    $select_options_new = array_merge($select_options_new, $select_options);
+    $select_options = $select_options_new;
 
     // We keep track of how many facets we're adding, because each facet form
     // needs a different form id.
-    if (end($options) !== '(-)') {
+    if (end($select_options) !== '(-)') {
       if (!isset($form_state)) {
         $form_state = array();
       }
-      $element = facetapi_select_facet_form($form_state, $options, $count);
+      $element = facetapi_select_facet_form($form_state, $select_options, $count, $actual_active_url);
     }
   }
 
+  /**
+   * Facet settings form.
+   */
   public function settingsForm(&$form, &$form_state) {
     parent::settingsForm($form, $form_state);
+
+    $states = array(
+      'visible' => array(
+        'select[name="widget"]' => array('value' => $this->id),
+      ),
+    );
+
     $form['widget']['widget_settings']['links'][$this->id]['default_option_label'] = array(
       '#title' => t('Default Option Label'),
       '#type' => 'textfield',
       '#default_value' => !empty($this->settings->settings['default_option_label']) ? $this->settings->settings['default_option_label'] : '',
+      '#states' => $states,
+    );
+    $form['widget']['widget_settings']['links'][$this->id]['reset_option_label'] = array(
+      '#title' => t('Reset Option Label'),
+      '#type' => 'textfield',
+      '#default_value' => !empty($this->settings->settings['reset_option_label']) ? $this->settings->settings['reset_option_label'] : '',
+      '#states' => $states,
     );
     $form['widget']['widget_settings']['links'][$this->id]['submit_page'] = array(
       '#type' => 'textfield',
       '#title' => t('Force this facet to submit to a specific search page'),
       '#description' => t('This facet will always submit to the page it is on if left empty.'),
       '#default_value' => !empty($this->settings->settings['submit_page']) ? $this->settings->settings['submit_page'] : '',
+      '#states' => $states,
+    );
+    $form['widget']['widget_settings']['links'][$this->id]['active_facet_selected'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Pre-select the active facet'),
+      '#description' => t('Selects the option in the select box that corresponds with the active facet.'),
+      '#default_value' => !empty($this->settings->settings['active_facet_selected']) ? $this->settings->settings['active_facet_selected'] : FALSE,
+      '#states' => $states,
     );
   }
 }
