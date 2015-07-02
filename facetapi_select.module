@@ -107,8 +107,11 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     }
 
     $select_options_new = array();
-    $reset_label = !empty($settings->settings['reset_option_label']) ? $settings->settings['reset_option_label'] : t('--Reset--');
-    $choose_label = !empty($settings->settings['default_option_label']) ? $settings->settings['default_option_label'] : t('--Choose--');
+    // @todo: we translate now the labels using t() on a string which is entered
+    // by the user. This is a hotfix, and we should change it to use the 18n
+    // module in the future.
+    $reset_label = !empty($settings->settings['reset_option_label']) ? t($settings->settings['reset_option_label']) : t('--Reset--');
+    $choose_label = !empty($settings->settings['default_option_label']) ? t($settings->settings['default_option_label']) : t('--Choose--');
 
     // The reset URL that needs to be clicked to remove the currently active
     // facet value.
