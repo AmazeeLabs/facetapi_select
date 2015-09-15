@@ -7,9 +7,14 @@ function facetapi_select_facet_form($form, &$form_state, $options, $count = 0) {
   $form['facets'] = array(
     '#type' => 'select',
     '#id' => $name,
+    '#name' => $name,
     '#default_value' => '',
     '#options' => $options,
-    '#attributes' => array('onchange' => "top.location.href=document.getElementById('$name').options[document.getElementById('$name').selectedIndex].value"),
+    '#attributes' => array(
+      'class' => array(
+        'facetapi-select'
+      ),
+    )
   );
   $form['submit'] = array(
     '#type' => 'submit',
