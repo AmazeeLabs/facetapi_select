@@ -1,8 +1,8 @@
 <?php
 
-function facetapi_select_facet_form($form_state, $options, $count = 0) {
+function facetapi_select_facet_form($form, &$form_state, $options, $count = 0) {
   drupal_add_js(drupal_get_path('module', 'facetapi_select') .'/js/facetapi_select.js');
-  
+
   $name = 'facetapi_select_facet_form_' . $count;
   $form['facets'] = array(
     '#type' => 'select',
@@ -80,10 +80,7 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     // We keep track of how many facets we're adding, because each facet form
     // needs a different form id.
     if (end($options) !== '(-)') {
-      if (!isset($form_state)) {
-        $form_state = array();
-      }
-      $element = facetapi_select_facet_form($form_state, $options, $count);
+      $element = drupal_get_form('facetapi_select_facet_form', $options, $count);
     }
   }
 
