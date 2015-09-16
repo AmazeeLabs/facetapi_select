@@ -48,6 +48,34 @@ function facetapi_select_facetapi_widgets() {
 }
 
 /**
+ * Implements hook_theme().
+ */
+function facetapi_select_theme() {
+  return array(
+    'facetapi_select_select_option' => array(
+      'variables' => array(
+        'facet_text' => NULL,
+        'facet_count' => 0,
+        'show_count' => TRUE,
+      ),
+    ),
+  );
+}
+
+/**
+ * Theme an individual select option.
+ */
+function theme_facetapi_select_select_option($variables) {
+  $output = $variables['facet_text'];
+
+  if ($variables['show_count']) {
+    $output .= ' (' . $variables['facet_count'] . ')';
+  }
+
+  return $output;
+}
+
+/**
  * Widget that renders facets as dropdowns.
  */
 class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
@@ -67,19 +95,23 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
       $path = !empty($this->settings->settings['submit_page']) ? $this->settings->settings['submit_page'] : $item['#path'];
       $path = strpos($item['#path'], $path) === 0 ? $item['#path'] : $path;
       $url = url($path, array('query' => $item['#query']));
-      $options[$url] = $item['#markup'].' ('.$item['#count'].')';
+      $options[$url] = theme('facetapi_select_select_option', array(
+        'facet_text' => $item['#markup'],
+        'facet_count' => $item['#count'],
+        'show_count' => isset($settings->settings['hide_facet_count']) ? !$settings->settings['hide_facet_count'] : TRUE,
+      ));
+
       if ($item['#active']) {
         $facet_active = TRUE;
       }
     }
 
     if (!$facet_active) {
-      if (!empty($settings->settings['default_option_label'])) {
-        array_unshift($options, $settings->settings['default_option_label']);
-      }
-      else {
-        array_unshift($options, t('--Choose--'));
-      }
+      $default_option_label = !empty($settings->settings['default_option_label']) ? $settings->settings['default_option_label'] : t('--Choose--');
+      array_unshift($options, theme('facetapi_select_select_option', array(
+        'facet_text' => $default_option_label,
+        'show_count' => FALSE,
+      )));
     }
 
     // We keep track of how many facets we're adding, because each facet form
@@ -91,16 +123,31 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
 
   public function settingsForm(&$form, &$form_state) {
     parent::settingsForm($form, $form_state);
+
+    $states = array(
+      'visible' => array(
+        'select[name="widget"]' => array('value' => $this->id),
+      ),
+    );
+
     $form['widget']['widget_settings']['links'][$this->id]['default_option_label'] = array(
       '#title' => t('Default Option Label'),
       '#type' => 'textfield',
       '#default_value' => !empty($this->settings->settings['default_option_label']) ? $this->settings->settings['default_option_label'] : '',
+      '#states' => $states,
     );
     $form['widget']['widget_settings']['links'][$this->id]['submit_page'] = array(
       '#type' => 'textfield',
       '#title' => t('Force this facet to submit to a specific search page'),
       '#description' => t('This facet will always submit to the page it is on if left empty.'),
       '#default_value' => !empty($this->settings->settings['submit_page']) ? $this->settings->settings['submit_page'] : '',
+      '#states' => $states,
+    );
+    $form['widget']['widget_settings']['links'][$this->id]['hide_facet_count'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Hide the facet count'),
+      '#default_value' => !empty($this->settings->settings['hide_facet_count']) ? $this->settings->settings['hide_facet_count'] : FALSE,
+      '#states' => $states,
     );
   }
 }
