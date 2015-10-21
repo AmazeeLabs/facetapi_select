@@ -1,26 +1,39 @@
 <?php
 
-function facetapi_select_facet_form($form, &$form_state, $options, $count = 0) {
-  drupal_add_js(drupal_get_path('module', 'facetapi_select') .'/js/facetapi_select.js');
-
+function facetapi_select_facet_form($form, &$form_state, $variables, $count = 0) {
   $name = 'facetapi_select_facet_form_' . $count;
-  $form['facets'] = array(
-    '#type' => 'select',
-    '#id' => $name,
-    '#name' => $name,
-    '#default_value' => '',
-    '#options' => $options,
-    '#attributes' => array(
-      'class' => array(
-        'facetapi-select'
+
+  // Add link to deactive widget if currently active
+  if (!empty($variables['active_items'])) {
+    $form['deactivate_links'] = array(
+      '#theme' => 'item_list',
+      '#items' => $variables['active_items']
+    );
+  }
+
+  if (!empty($variables['options'])) {
+    $form['facets'] = array(
+      '#type' => 'select',
+      '#id' => $name,
+      '#name' => $name,
+      '#default_value' => '',
+      '#options' => $variables['options'],
+      '#attributes' => array(
+        'class' => array('facetapi-select'),
       ),
-    )
-  );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#attributes' => array('class' => array('facetapi-select-submit')),
-    '#value' => t('Submit'),
-  );
+      '#attached' => array(
+        'js' => array(
+          drupal_get_path('module', 'facetapi_select') .'/js/facetapi_select.js',
+        ),
+      ),
+    );
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#attributes' => array('class' => array('facetapi-select-submit')),
+      '#value' => t('Submit'),
+    );
+  }
+
   return $form;
 }
 
@@ -87,7 +100,6 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     static $count = 0;
     $count++;
     $element = &$this->build[$this->facet['field alias']];
-
     $settings = $this->settings;
 
     $facet_active = FALSE;
@@ -95,30 +107,60 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
       $path = !empty($this->settings->settings['submit_page']) ? $this->settings->settings['submit_page'] : $item['#path'];
       $path = strpos($item['#path'], $path) === 0 ? $item['#path'] : $path;
       $url = url($path, array('query' => $item['#query']));
-      $options[$url] = theme('facetapi_select_select_option', array(
-        'facet_text' => $item['#markup'],
-        'facet_count' => $item['#count'],
-        'show_count' => isset($settings->settings['hide_facet_count']) ? !$settings->settings['hide_facet_count'] : TRUE,
-      ));
 
       if ($item['#active']) {
-        $facet_active = TRUE;
+        $variables['active_items'][$url] = $this->buildActiveLink($item, $path);
+      }
+      else {
+        $variables['options'][$url] = theme('facetapi_select_select_option', array(
+          'facet_text' => $item['#markup'],
+          'facet_count' => $item['#count'],
+          'show_count' => isset($settings->settings['hide_facet_count']) ? !$settings->settings['hide_facet_count'] : TRUE,
+        ));
       }
     }
 
-    if (!$facet_active) {
+    if (!empty($variables['options'])) {
       $default_option_label = !empty($settings->settings['default_option_label']) ? $settings->settings['default_option_label'] : t('--Choose--');
-      array_unshift($options, theme('facetapi_select_select_option', array(
+      array_unshift($variables['options'], theme('facetapi_select_select_option', array(
         'facet_text' => $default_option_label,
         'show_count' => FALSE,
       )));
+
     }
 
-    // We keep track of how many facets we're adding, because each facet form
-    // needs a different form id.
-    if (end($options) !== '(-)') {
-      $element = drupal_get_form('facetapi_select_facet_form', $options, $count);
-    }
+    $element = drupal_get_form('facetapi_select_facet_form', $variables, $count);
+  }
+
+  /**
+   * Build an individual active item link.
+   *
+   * @param array $item
+   *   The facet item to build as an active link.
+   * @param string $path
+   *   The path to use for the link as determined by the facetapi_select settings.
+   *
+   * @return string
+   *   The built active link based on the specified item.
+   */
+  protected function buildActiveLink($item, $path) {
+    // We call theme directly here because we will be adding these items to a
+    // theme_list() build array as the items.
+    return theme('facetapi_link_active', array(
+      'text' => $item['#markup'],
+      'count' => $item['#count'],
+      'path' => $path,
+      'options' => array(
+        'query' => $item['#query'],
+        'attributes' => array(
+          'class' => 'facetapi-active',
+          'id' => drupal_html_id('facetapi-link'),
+          'rel' => 'nofollow',
+        ),
+        // Because the path has already been through url(), mark it as external.
+        'html' => TRUE,
+      )
+    ));
   }
 
   public function settingsForm(&$form, &$form_state) {
