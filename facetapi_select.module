@@ -92,6 +92,7 @@ function theme_facetapi_select_select_option($variables) {
  * Widget that renders facets as dropdowns.
  */
 class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
+  private $urls_cache = array();
 
   /**
    * Renders the links.
@@ -102,23 +103,7 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     $element = &$this->build[$this->facet['field alias']];
     $settings = $this->settings;
 
-    $facet_active = FALSE;
-    foreach ($element as $value => $item) {
-      $path = !empty($this->settings->settings['submit_page']) ? $this->settings->settings['submit_page'] : $item['#path'];
-      $path = strpos($item['#path'], $path) === 0 ? $item['#path'] : $path;
-      $url = url($path, array('query' => $item['#query']));
-
-      if ($item['#active']) {
-        $variables['active_items'][$url] = $this->buildActiveLink($item, $path);
-      }
-      else {
-        $variables['options'][$url] = theme('facetapi_select_select_option', array(
-          'facet_text' => $item['#markup'],
-          'facet_count' => $item['#count'],
-          'show_count' => isset($settings->settings['hide_facet_count']) ? !$settings->settings['hide_facet_count'] : TRUE,
-        ));
-      }
-    }
+    $variables = $this->buildItems($element);
 
     if (!empty($variables['options'])) {
       $default_option_label = !empty($settings->settings['default_option_label']) ? $settings->settings['default_option_label'] : t('--Choose--');
@@ -133,6 +118,83 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
   }
 
   /**
+   * Build the active items and the options array for the provided facetapi element.
+   *
+   * @param array $element
+   *   The facetapi element as provided by execute().
+   *
+   * @return array
+   *   An array that contains the options and active items arrays.
+   */
+  protected function buildItems($element, $depth = 0) {
+    $settings = $this->settings;
+    $active_item = NULL;
+    $variables = array('active_items' => array(), 'options' => array());
+
+    foreach ($element as $value => $item) {
+      $url = $this->getUrl($item);
+
+      if ($item['#active']) {
+        $variables['active_items'][$url]['data'] = $this->buildActiveLink($item);
+        $active_item = $item;
+      }
+      else {
+        $variables['options'][$url] = $this->buildSelectOption($item);
+      }
+    }
+
+    // When there are currently no options and the current active item has children
+    // let's add the children as options.
+    if (empty($variables['options']) && !empty($active_item['#item_children'])) {
+      $this->appendChildren($variables, $active_item, $depth);
+    }
+
+    return $variables;
+  }
+
+  /**
+   * Append children to the active items and options for the facet.
+   *
+   * @param array $variables
+   *   The variables array as provided by FacetapiSlectDropdowns::getItems().
+   * @param array $item
+   *   The facet item to use for retrieving the children.
+   * @param int $depth
+   *   The current depth of the childen.
+   *
+   * @return void
+   */
+  protected function appendChildren(array &$variables, array $item, $depth = 0) {
+    $tmpItems = $this->buildItems($item['#item_children'], ++$depth);
+
+    if (!empty($tmpItems['active_items'])) {
+      $variables['active_items'][$this->getUrl($item)]['children'] = $tmpItems['active_items'];
+    }
+
+    if (!empty($tmpItems['options'])) {
+      $variables['options'] += $tmpItems['options'];
+    }
+  }
+
+  /**
+   * Append the OpGroup header to the options array for active items so that
+   * they should not selectable.
+   *
+   * @param array $variables
+   *   The variables array as provided by FacetapiSlectDropdowns::getItems().
+   * @param array $item
+   *   The item to build the opgroup header for.
+   *
+   * @return void
+   */
+  function appendOpGroupheader(array &$variables, array $item) {
+    if (!empty($item) && isset($variables['active_items'][$this->getUrl($item)])) {
+      $text = $this->buildSelectOption($item);
+      $variables['options'][$text] = array();
+    }
+  }
+
+  /**
    * Build an individual active item link.
    *
    * @param array $item
@@ -143,13 +205,13 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
    * @return string
    *   The built active link based on the specified item.
    */
-  protected function buildActiveLink($item, $path) {
+  protected function buildActiveLink(array $item) {
     // We call theme directly here because we will be adding these items to a
     // theme_list() build array as the items.
     return theme('facetapi_link_active', array(
       'text' => $item['#markup'],
       'count' => $item['#count'],
-      'path' => $path,
+      'path' => $this->getUrl($item, FALSE),
       'options' => array(
         'query' => $item['#query'],
         'attributes' => array(
@@ -161,6 +223,42 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
         'html' => TRUE,
       )
     ));
+  }
+
+  /**
+   * Build an indiviudal select option.
+   *
+   * @param array $item
+   *   The facet item to use for to build the select option for.
+   *
+   * @return string
+   *   The themed individual select option text.
+   */
+  protected function buildSelectOption(array $item) {
+    return theme('facetapi_select_select_option', array(
+      'facet_text' => $item['#markup'],
+      'facet_count' => $item['#count'],
+      'show_count' => isset($this->settings->settings['hide_facet_count']) ? !$this->settings->settings['hide_facet_count'] : TRUE,
+    ));
+  }
+
+  /**
+   * Retrieve the url for the specified facet item.
+   *
+   * @param array $item
+   *   The facet item to use for retrieving the url.
+   * @param boolean $append_query (optional)
+   *   Determines if the query should be appended to the return url.
+   */
+  protected function getUrl(array $item, $append_query = TRUE) {
+    if (!isset($this->urls_cache[$item['#path']])) {
+      $path = !empty($this->settings->settings['submit_page']) ? $this->settings->settings['submit_page'] : $item['#path'];
+      $path = strpos($item['#path'], $path) === 0 ? $item['#path'] : $path;
+      $this->urls_cache[$item['#path']] = $path;
+    }
+
+    $query = ($append_query) ? $item['#query'] : array();
+    return url($this->urls_cache[$item['#path']], array('query' => $query));
   }
 
   public function settingsForm(&$form, &$form_state) {
