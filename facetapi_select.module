@@ -34,6 +34,10 @@ function facetapi_select_facet_form($form, &$form_state, $variables, $count = 0)
     );
   }
 
+  if (!empty($variables['default_option_label'])) {
+    $form['facets']['#empty_option'] = $variables['default_option_label'];
+  }
+
   return $form;
 }
 
@@ -106,12 +110,11 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     $variables = $this->buildItems($element);
 
     if (!empty($variables['options'])) {
-      $default_option_label = !empty($settings->settings['default_option_label']) ? $settings->settings['default_option_label'] : t('--Choose--');
-      array_unshift($variables['options'], theme('facetapi_select_select_option', array(
+      $default_option_label = !empty($settings->settings['default_option_label']) ? filter_xss_admin($settings->settings['default_option_label']) : t('--Choose--');
+      $variables['default_option_label'] = theme('facetapi_select_select_option', array(
         'facet_text' => $default_option_label,
-        'show_count' => FALSE,
-      )));
-
+        'show_count' => FALSE
+      ));
     }
 
     $element = drupal_get_form('facetapi_select_facet_form', $variables, $count);
