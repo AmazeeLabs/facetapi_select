@@ -253,7 +253,7 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     return theme('facetapi_link_active', array(
       'text' => $item['#markup'],
       'count' => $item['#count'],
-      'path' => $this->getUrl($item, FALSE),
+      'path' => $item['#path'],
       'options' => array(
         'query' => $item['#query'],
         'attributes' => array(
