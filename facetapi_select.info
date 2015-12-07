@@ -3,3 +3,5 @@ description = Display search facets as select dropdowns
 package = Search Toolkit
 core = 7.x
 dependencies[] = facetapi
+
+files[] = plugins/facetapi/FacetapiSelectDropdowns.inc
