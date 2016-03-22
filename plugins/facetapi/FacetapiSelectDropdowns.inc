@@ -9,14 +9,16 @@
  * Widget that renders facets as dropdowns.
  */
 class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
+
   private $urls_cache = array();
 
   /**
-   * Renders the links.
+   * {@inheritdoc}
    */
   public function execute() {
     static $count = 0;
     $count++;
+
     $element = &$this->build[$this->facet['field alias']];
     $settings = $this->settings;
 
@@ -41,6 +43,22 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     }
 
     $element = drupal_get_form("facetapi_select_facet_form_$count", $variables);
+
+    if ($this->isActive()) {
+      $this->build['#attributes']['class'][] = 'form-select selected';
+    }
+
+    $element['#attributes'] = array_merge($element['#attributes'], $this->build['#attributes']);
+  }
+
+  /**
+   * Determine if the Facet is active.
+   *
+   * @return boolean
+   *   Returns TRUE if the Facet is active.
+   */
+  public function isActive() {
+   return (boolean) count($this->build['#adapter']->getActiveItems($this->facet->getFacet()));
   }
 
   /**
@@ -57,7 +75,6 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     $variables = array('options' => array());
     $facet_settings = $this->facet->getSettings();
 
-    $is_active = FALSE;
     $url = NULL;
     foreach ($element as $value => $item) {
       $url = $this->getUrl($item);
@@ -95,7 +112,7 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
    *
    * @return void
    */
-  protected function appendChildren(array &$variables, array $item, $depth = 0, $is_active = FALSE) {
+  protected function appendChildren(array &$variables, array $item, $depth = 0) {
     $tmpItems = $this->buildItems($item['#item_children'], ++$depth);
 
     if (!empty($tmpItems['options'])) {
@@ -143,6 +160,9 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     return url($this->urls_cache[$item['#path']], array('query' => $query));
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function settingsForm(&$form, &$form_state) {
     parent::settingsForm($form, $form_state);
 
@@ -178,4 +198,5 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
       '#states' => $states,
     );
   }
+
 }
