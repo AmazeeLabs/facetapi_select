@@ -26,10 +26,30 @@ class FacetapiSelectDropdowns extends FacetapiWidgetLinks {
     $element = drupal_get_form("facetapi_select_facet_form_$count", $variables);
 
     if ($this->isActive()) {
-      $this->build['#attributes']['class'][] = 'form-select selected';
+      $this->build['#attributes']['class'][] = self::getFormSelectedClass();
     }
 
     $element['#attributes'] = array_merge($element['#attributes'], $this->build['#attributes']);
+  }
+
+  /**
+   * Sets the facetapi select form selected class.
+   *
+   * @param string $class
+   *   The class in which to set the facetapi select form selected class.
+   */
+  public static function setFormSelectedClass($class) {
+    variable_set('facetapi_select_form_selected_class', $class);
+  }
+
+  /**
+   * Gets the facetapi select form selected class.
+   *
+   * @return string
+   *   A string that represents the class for the facetapi selected form.
+   */
+  public static function getFormSelectedClass() {
+    return variable_get('facetapi_select_form_selected_class', 'selected');
   }
 
   /**
