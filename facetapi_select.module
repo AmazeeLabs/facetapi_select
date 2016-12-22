@@ -112,6 +112,28 @@ function facetapi_select_i18n_string_info() {
 }
 
 /**
+ * Implements hook_i18n_string_list().
+ */
+function facetapi_select_i18n_string_list($group) {
+  $strings = array();
+
+  if ($group == 'facetapi_select') {
+    foreach (facetapi_get_searcher_info() as $searcher => $searcher_info) {
+      $adapter = facetapi_adapter_load($searcher);
+      foreach (facetapi_get_realm_info() as $realm_name => $realm) {
+        $realm = facetapi_realm_load($realm_name);
+        foreach (facetapi_get_facet_info($searcher) as $facet) {
+          $settings = $adapter->getFacetSettings($facet, $realm);
+          FacetapiSelectDropdowns::appendTranslatableOption($strings, $settings);
+        }
+      }
+    }
+  }
+
+  return $strings;
+}
+
+/**
  * Submit handlers for settings form of facet filters.
  */
 function facetapi_select_facet_settings_form_submit($form, $form_state) {
