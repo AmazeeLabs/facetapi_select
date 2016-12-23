@@ -8,9 +8,7 @@
       $(".facetapi-select-submit").hide();
 
       $('.facetapi-select').change(function() {
-        var id = $(this).attr('id');
-        var elem = document.getElementById(id);
-        top.location.href=elem.options[elem.selectedIndex].value;
+        this.form.submit();
       });
     }
   };
