@@ -5,7 +5,6 @@
  * Update and uninstall functions for the Facetapi Select module.
  */
 
-
 /**
  * Implements hook_uninstall().
  */
