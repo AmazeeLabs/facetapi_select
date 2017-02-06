@@ -16,5 +16,5 @@ function facetapi_select_uninstall() {
  * Adjust the form selected class as to not break current installations.
  */
 function facetapi_select_update_7101(&$sandbox) {
-  FaceTapiSelectDropdowns::setFormSelectedClass('form-select selected');
+  FacetapiSelectDropdowns::setFormSelectedClass('form-select selected');
 }
